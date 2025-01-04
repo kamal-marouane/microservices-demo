@@ -27,8 +27,8 @@ metadata:
   {{- end }}
 ---
 {{- end }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: {{ .Values.frontend.name }}
   namespace: {{ .Release.Namespace }}
