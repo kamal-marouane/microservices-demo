@@ -27,21 +27,32 @@ metadata:
   {{- end }}
 ---
 {{- end }}
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ .Values.frontend.name }}
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Values.frontend.name }}
 spec:
+  replicas: {{ .Values.frontend.replicaCount | default 4 }}
   selector:
     matchLabels:
       app: {{ .Values.frontend.name }}
+  strategy:
+    canary:
+      steps:
+        - setWeight: 25  # Send 25% of traffic to new version
+        - pause:
+            duration: 60s  # Pause to monitor the new version
+        - setWeight: 50  # Send 50% of traffic to the new version
+        - pause: {}
+        - setWeight: 100  # Full rollout to v2
   template:
     metadata:
       labels:
         app: {{ .Values.frontend.name }}
+        version: canary  # Add version label for v2
       annotations:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
@@ -70,7 +81,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/jarreb1/kamal-marouane/frontend:v1.0
+          image: gcr.io/jarreb1/kamal-marouane/frontend:v2.0  # Updated to v2 for rollout
           ports:
           - containerPort: 8080
           readinessProbe:
