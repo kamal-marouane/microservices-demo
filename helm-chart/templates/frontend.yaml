@@ -70,7 +70,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/jarreb1/kamal-marouane/frontend:v2.0
+          image: gcr.io/jarreb1/kamal-marouane/frontend:v1.0
           ports:
           - containerPort: 8080
           readinessProbe:
