@@ -81,7 +81,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/jarreb1/kamal-marouane/frontend:v2.0  # Updated to v2 for rollout
+          image: gcr.io/jarreb1/kamal-marouane/frontend:v1.0  # Updated to v2 for rollout
           ports:
           - containerPort: 8080
           readinessProbe:
