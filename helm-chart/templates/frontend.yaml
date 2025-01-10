@@ -27,33 +27,21 @@ metadata:
   {{- end }}
 ---
 {{- end }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: {{ .Values.frontend.name }}
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Values.frontend.name }}
 spec:
-  replicas: {{ .Values.frontend.replicaCount | default 4 }}
   selector:
     matchLabels:
       app: {{ .Values.frontend.name }}
-  strategy:
-    canary:
-      steps:
-        - setWeight: 25  # Send 25% of traffic to the new version v2
-        - pause:
-            duration: 60s  # Pause to monitor the new version
-        - setWeight: 50  # Send 50% of traffic to the new version v2
-        - pause:
-            duration: 60s  # Pause to monitor at 50%
-        - setWeight: 100  # Full rollout to v2
   template:
     metadata:
       labels:
         app: {{ .Values.frontend.name }}
-        version: v2  # Add version label for v2
       annotations:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
@@ -69,10 +57,10 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
       {{- end }}
-      {{- if .Values.seccompProfile.enable }}
-      seccompProfile:
-        type: {{ .Values.seccompProfile.type }}
-      {{- end }}
+        {{- if .Values.seccompProfile.enable }}
+        seccompProfile:
+          type: {{ .Values.seccompProfile.type }}
+        {{- end }}
       containers:
         - name: server
           securityContext:
@@ -82,66 +70,66 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/jarreb1/kamal-marouane/frontend:v2.0  # v2 (second release to test argorollout)
+          image: gcr.io/jarreb1/kamal-marouane/frontend:v1.0
           ports:
-            - containerPort: 8080
+          - containerPort: 8080
           readinessProbe:
             initialDelaySeconds: 10
             httpGet:
               path: "/_healthz"
               port: 8080
               httpHeaders:
-                - name: "Cookie"
-                  value: "shop_session-id=x-readiness-probe"
+              - name: "Cookie"
+                value: "shop_session-id=x-readiness-probe"
           livenessProbe:
             initialDelaySeconds: 10
             httpGet:
               path: "/_healthz"
               port: 8080
               httpHeaders:
-                - name: "Cookie"
-                  value: "shop_session-id=x-liveness-probe"
+              - name: "Cookie"
+                value: "shop_session-id=x-liveness-probe"
           env:
-            - name: PORT
-              value: "8080"
-            - name: PRODUCT_CATALOG_SERVICE_ADDR
-              value: "{{ .Values.productCatalogService.name }}:3550"
-            - name: CURRENCY_SERVICE_ADDR
-              value: "{{ .Values.currencyService.name }}:7000"
-            - name: CART_SERVICE_ADDR
-              value: "{{ .Values.cartService.name }}:7070"
-            - name: RECOMMENDATION_SERVICE_ADDR
-              value: "{{ .Values.recommendationService.name }}:8080"
-            - name: SHIPPING_SERVICE_ADDR
-              value: "{{ .Values.shippingService.name }}:50051"
-            - name: CHECKOUT_SERVICE_ADDR
-              value: "{{ .Values.checkoutService.name }}:5050"
-            - name: AD_SERVICE_ADDR
-              value: "{{ .Values.adService.name }}:9555"
-            - name: SHOPPING_ASSISTANT_SERVICE_ADDR
-              value: "{{ .Values.shoppingAssistantService.name }}:80"
-            - name: ENV_PLATFORM
-              value: {{ .Values.frontend.platform | quote }}
-            {{- if .Values.opentelemetryCollector.create }}
-            - name: COLLECTOR_SERVICE_ADDR
-              value: "{{ .Values.opentelemetryCollector.name }}:4317"
-            - name: OTEL_SERVICE_NAME
-              value: "{{ .Values.frontend.name }}"
-            {{- end }}
-            {{- if .Values.googleCloudOperations.tracing }}
-            - name: ENABLE_TRACING
-              value: "1"
-            {{- end }}
-            {{- if .Values.googleCloudOperations.profiler }}
-            - name: ENABLE_PROFILER
-              value: "1"
-            {{- end }}
-            - name: CYMBAL_BRANDING
-              value: {{ .Values.frontend.cymbalBranding | quote }}
-            - name: ENABLE_ASSISTANT
-              value: {{ .Values.shoppingAssistantService.create | quote }}
-            - name: ENABLE_SINGLE_SHARED_SESSION
-              value: {{ .Values.frontend.singleSharedSession | quote }}
+          - name: PORT
+            value: "8080"
+          - name: PRODUCT_CATALOG_SERVICE_ADDR
+            value: "{{ .Values.productCatalogService.name }}:3550"
+          - name: CURRENCY_SERVICE_ADDR
+            value: "{{ .Values.currencyService.name }}:7000"
+          - name: CART_SERVICE_ADDR
+            value: "{{ .Values.cartService.name }}:7070"
+          - name: RECOMMENDATION_SERVICE_ADDR
+            value: "{{ .Values.recommendationService.name }}:8080"
+          - name: SHIPPING_SERVICE_ADDR
+            value: "{{ .Values.shippingService.name }}:50051"
+          - name: CHECKOUT_SERVICE_ADDR
+            value: "{{ .Values.checkoutService.name }}:5050"
+          - name: AD_SERVICE_ADDR
+            value: "{{ .Values.adService.name }}:9555"
+          - name: SHOPPING_ASSISTANT_SERVICE_ADDR
+            value: "{{ .Values.shoppingAssistantService.name }}:80"
+          - name: ENV_PLATFORM
+            value: {{ .Values.frontend.platform | quote }}
+          {{- if .Values.opentelemetryCollector.create }}
+          - name: COLLECTOR_SERVICE_ADDR
+            value: "{{ .Values.opentelemetryCollector.name }}:4317"
+          - name: OTEL_SERVICE_NAME
+            value: "{{ .Values.frontend.name }}"
+          {{- end }}
+          {{- if .Values.googleCloudOperations.tracing }}
+          - name: ENABLE_TRACING
+            value: "1"
+          {{- end }}
+          {{- if .Values.googleCloudOperations.profiler }}
+          - name: ENABLE_PROFILER
+            value: "1"
+          {{- end }}
+          - name: CYMBAL_BRANDING
+            value: {{ .Values.frontend.cymbalBranding | quote }}
+          - name: ENABLE_ASSISTANT
+            value: {{ .Values.shoppingAssistantService.create | quote }}
+          - name: ENABLE_SINGLE_SHARED_SESSION
+            value: {{ .Values.frontend.singleSharedSession | quote }}
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
 ---
