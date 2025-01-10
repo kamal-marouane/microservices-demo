@@ -82,7 +82,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: gcr.io/jarreb1/kamal-marouane/frontend:v1.0  # v1 first release
+          image: gcr.io/jarreb1/kamal-marouane/frontend:v2.0  # v2 (second release to test argorollout)
           ports:
             - containerPort: 8080
           readinessProbe:
